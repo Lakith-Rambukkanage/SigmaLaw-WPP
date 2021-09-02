@@ -1,6 +1,7 @@
 import json
 from keras.models import load_model
 from stanfordcorenlp import StanfordCoreNLP
+from predict_parties_in_paragraph import predict_parties
 
 GOOGLE_NEWS_VECTORS_PATH = r""
 STANFORD_CORENLP = r""
