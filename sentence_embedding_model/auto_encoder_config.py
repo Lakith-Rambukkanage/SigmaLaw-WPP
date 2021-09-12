@@ -1,3 +1,5 @@
+import os
+
 Config = {
   'case_sentence_csv_folder': r'E:\Final Year Project\Datasets\criminal_sentences',
   'csv_file_list': [
@@ -9,6 +11,7 @@ Config = {
   'batch_size': 4,
   'validation_split': 0.2,
   'vocab_size': 30000,
+  'vocab_file': r'E:\Final Year Project\Datasets\bert_training\Tensorflow_TextVectorization_legal_vocab_30000\vocab.txt',
   'embed_dim': 300,
   'sequence_length': 128,
   'word_embeddings_type': 'GLOVE',
@@ -17,8 +20,30 @@ Config = {
   'decoder_units': 512,
   'recurrent_layer': 'GRU',
   'recurrent_layer_output_sequence': False,
-  'loss_function': 'masked_loss',
-  'accuracy_metric': 'sequence_regeneration_accuracy',
-  'epochs': 3,
+  'loss_function': 'mean_squared_error',
+  'accuracy_metric': 'cosine_similarity',
+  'epochs': 2,
   'model_folder': r'E:\Final Year Project\case_sentence_embedding_models'
 }
+
+def validate_config():
+  dir_error = "Directory path not found!"
+  assert os.path.isdir(Config['case_sentence_csv_folder']), \
+    f"{dir_error} `case_sentence_csv_folder` should be the directory of case sentence files"
+  assert os.path.isdir(Config['pretrained_word_embeddings_path']), \
+    f"{dir_error} `pretrained_word_embeddings_path` should be the directory of word embeddings"
+  assert os.path.isdir(Config['model_folder']), \
+    f"{dir_error} `model_folder` should be the directory to save the checkpoints"
+  assert os.path.isfile(Config['vocab_file']), \
+    "File path not found! `vocab_file` should be the path to vocabulary file"
+
+  assert len(Config['csv_file_list']) > 0, \
+    "Empty file list! `csv_file_list` should contain file names from the `case_sentence_csv_folder`"
+
+  assert isinstance(Config['validation_split'], float) and Config['validation_split'] < 0.5 and Config['validation_split'] > 0.1, \
+    "Undesirable Value! `validation_split` should be a float value between 0.1 and 0.5"
+
+  assert Config['recurrent_layer'] in ['GRU', 'LSTM'], \
+    "Invalid option! `recurrent_layer` should be either `GRU` or `LSTM`"
+  assert Config['word_embeddings_type'] in ['GLOVE', 'Word2Vec'], \
+    "Invalid option! `word_embeddings_type` should be either `GLOVE` or `Word2Vec`"
