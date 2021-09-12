@@ -10,7 +10,7 @@ from tokenizer import get_tokenizer
 from embedding_layer import get_embeddings_matrix
 # from sequence_regeneration_accuracy import SequenceRegenerationAccuracy
 # from masked_loss import MaskedLoss
-from checkpoint_saver import CheckpointSaver, MetricsRecorder
+from custom_callbacks import CheckpointSaver, MetricsRecorder
 from auto_encoder import AutoEncoder
 from auto_encoder_config import Config, validate_config
 
