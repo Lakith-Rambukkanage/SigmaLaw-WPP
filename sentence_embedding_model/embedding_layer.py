@@ -23,14 +23,19 @@ def get_glove_embeddings_dict(embeddings_folder=GLOVE_EMBEDDINGS_FOLDER, embeddi
 
   return embeddings_dict
 
-def get_embeddings_matrix(tokenizer, embeddings_dict, embedding_dim=EMBED_DIM):
-  num_tokens = tokenizer.vocabulary_size() + 2
+def get_embeddings_matrix(vocab_list, embedding_type=EMBED_TYPE, embedding_dim=EMBED_DIM):
+  if embedding_type == 'GLOVE':
+    embeddings_dict = get_glove_embeddings_dict()
+  else:
+    raise ValueError(f"Embedding Type should be 'GLOVE', given {embedding_type}")
+
+  num_tokens = len(vocab_list)
   embedding_found = 0
 
   # Prepare embedding matrix
   embedding_matrix = np.zeros((num_tokens, embedding_dim), dtype=np.float32)
   # for word, i in word_index.items():
-  for i, word in enumerate(tokenizer.get_vocabulary()):
+  for i, word in enumerate(vocab_list):
     embedding_vector = embeddings_dict.get(word)
     if embedding_vector is not None:
       # Words not found in embedding index will be all-zeros.
@@ -38,7 +43,7 @@ def get_embeddings_matrix(tokenizer, embeddings_dict, embedding_dim=EMBED_DIM):
       embedding_matrix[i] = embedding_vector
       embedding_found += 1
 
-  print("Converted %d words out of %d" % (embedding_found, tokenizer.vocabulary_size()))
+  print("Converted %d words out of %d" % (embedding_found, num_tokens))
   return embedding_matrix
 
 def get_embedding_layer(tokenizer, embedding_type=EMBED_TYPE, trainable=False):

@@ -16,15 +16,16 @@ class Decoder(tf.keras.layers.Layer):
                                    recurrent_initializer='glorot_uniform')
 
     # This fully connected layer produces the logits for each output token.
-    self.fc = tf.keras.layers.Dense(self.vocab_size)
+    # self.fc = tf.keras.layers.Dense(self.vocab_size)
+    self.fc = tf.keras.layers.Dense(self.embedding.output_dim)
 
   def call(self, new_tokens, enc_output, state=None, mask=None):
     shape_checker = ShapeChecker()
     shape_checker(new_tokens, ('batch', 't'))
     shape_checker(enc_output, ('batch', 'enc_units'))
 
-    if mask is not None:
-      shape_checker(mask, ('batch', 's'))
+    # if mask is not None:
+    #   shape_checker(mask, ('batch', 's'))
 
     if state is not None:
       shape_checker(state, ('batch', 'dec_units'))
@@ -47,6 +48,6 @@ class Decoder(tf.keras.layers.Layer):
 
     # Step 4. Pass through Dense Layer to generate logits for each token in vocab
     dec_output = self.fc(concat_output)
-    shape_checker(dec_output, ('batch', 'vocab_size'))
+    shape_checker(dec_output, ('batch', 'embedding_dim'))
 
     return dec_output, state

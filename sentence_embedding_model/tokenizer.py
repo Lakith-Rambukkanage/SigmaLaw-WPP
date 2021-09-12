@@ -4,6 +4,7 @@ from auto_encoder_config import Config
 
 VOCAB_SIZE = Config['vocab_size']
 SEQ_LEN = Config['sequence_length']
+VOCAB_FILE = Config['vocab_file']
 
 def tf_preprocess(text):
   text = tf.strings.regex_replace(text, r"[\\]", ' ')
@@ -18,12 +19,16 @@ def tf_preprocess(text):
   text = tf.strings.join(['[START]', text, '[END]'], separator=' ')
   return text
 
-def get_tokenizer(train_ds, vocab_size=VOCAB_SIZE, seq_len=SEQ_LEN):
+def get_tokenizer(vocab_file=VOCAB_FILE, seq_len=SEQ_LEN):
+  with open(vocab_file, 'r') as f:
+    vocab_list = f.read().split('\n')
+
   vectorizer = TextVectorization(
-    max_tokens=vocab_size,
+    max_tokens=len(vocab_list),
     standardize=tf_preprocess,
-    output_sequence_length=SEQ_LEN
+    output_sequence_length=seq_len,
+    vocabulary=vocab_list
   )
-  vectorizer.adapt(train_ds)
+  # vectorizer.adapt(train_ds)
   print("Vocabulary Size:", vectorizer.vocabulary_size())
   return vectorizer
