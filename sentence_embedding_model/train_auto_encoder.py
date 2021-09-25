@@ -133,29 +133,9 @@ cp_callback = CheckpointSaver(ckpt_folder, ckpt_freq, steps_per_epoch)
 metrics_json_path = os.path.join(Config['model_folder'], dt_str, "metrics.json")
 metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch/20), steps_per_epoch)
 
-auto_encoder.set_train_config(num_epochs=EPOCHS, steps_per_epoch=steps_per_epoch, checkpoint_frequency=ckpt_freq)
-
 auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS, initial_epoch=INIT_EPOCH, callbacks=[cp_callback, metric_callback])
 # auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
 
-""" Write metrics to json file """
-"""
-metrics_dict = auto_encoder.get_metrics_dict()
-final_metrics = {}
-for key, metrics in metrics_dict.items():
-  for metric_name, metric_tensor in metrics.items():
-    final_metrics['train'][key][metric_name] = float(metric_tensor.numpy())
-
-test_metrics_dict = auto_encoder.get_test_metrics_dict()
-if test_metrics_dict != None:
-  for key, metrics in test_metrics_dict.items():
-    for metric_name, metric_tensor in metrics.items():
-      final_metrics['test'][key][metric_name] = float(metric_tensor.numpy())
-
-metrics_json_path = os.path.join(Config['model_folder'], dt_str, "metrics.json")
-with open(metrics_json_path, 'w') as json_file:
-  json.dump(final_metrics, json_file)
-"""
 
 """ Write model config into json file """
 config_json_path = os.path.join(Config['model_folder'], dt_str, "model_config.json")

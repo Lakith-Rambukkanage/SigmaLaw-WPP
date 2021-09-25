@@ -12,8 +12,6 @@ class AutoEncoder(tf.keras.Model):
     self.tokenizer = tokenizer
     self.vocab_size = tokenizer.vocabulary_size()
     self.enable_eager_execution = enable_eager_execution
-    self.metrics_dict = {}
-    self.test_metrics_dict = {}
 
     self.embedding_layer = tf.keras.layers.Embedding(
       embedding_matrix.shape[0],
@@ -54,23 +52,6 @@ class AutoEncoder(tf.keras.Model):
     else:
       return enc_output
 
-  def set_train_config(self, num_epochs, steps_per_epoch, checkpoint_frequency):
-    self.num_epochs = tf.constant(num_epochs, dtype=tf.int32)
-    self.steps_per_epoch = tf.constant(steps_per_epoch, dtype=tf.int32)
-    self.ckpt_freq = tf.constant(checkpoint_frequency, dtype=tf.int32)
-    self.step_counter = tf.constant(0, dtype=tf.int32)
-    self.epoch_counter = tf.constant(0, dtype=tf.int32)
-
-  def get_metrics_dict(self):
-    return self.metrics_dict
-
-  def get_test_metrics_dict(self):
-    return self.test_metrics_dict
-
-  def clear_metric_dicts(self):
-    self.metrics_dict = {}
-    self.test_metrics_dict = {}
-
   def train_step(self, inputs):
     self.shape_checker = ShapeChecker()
     # return self._train_step(inputs)
@@ -101,10 +82,6 @@ class AutoEncoder(tf.keras.Model):
     return tokens, mask
 
   def _train_step(self, input_text):
-    # self.step_counter += 1
-    # if self.step_counter > self.steps_per_epoch:
-    #   self.step_counter = 1
-    #   self.epoch_counter += 1
 
     tokens, mask = self._preprocess(input_text)
     max_seq_length = tf.shape(tokens)[1]
@@ -144,10 +121,6 @@ class AutoEncoder(tf.keras.Model):
 
     batch_metrics = self.get_batch_metrics()
     batch_metrics['batch_loss'] = average_loss
-
-    # if tf.math.floormod(self.step_counter, self.ckpt_freq) == 0:
-    #   key = f'epoch_{self.epoch_counter}_step_{self.step_counter}'
-    #   self.metrics_dict[key] = batch_metrics
 
     return batch_metrics
 
@@ -204,8 +177,6 @@ class AutoEncoder(tf.keras.Model):
 
     batch_metrics = self.get_batch_metrics()
     batch_metrics['batch_loss'] = average_loss
-
-    # self.test_metrics_dict[f'epoch_{self.epoch_counter+1}'] = batch_metrics
 
     return batch_metrics
 
