@@ -1,6 +1,7 @@
 import os
 import math
 import json
+import glob
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -13,6 +14,8 @@ from embedding_layer import get_embeddings_matrix
 from custom_callbacks import CheckpointSaver, MetricsRecorder
 from auto_encoder import AutoEncoder
 from auto_encoder_config import Config, validate_config
+
+train_start_datetime = datetime.now()
 
 validate_config()
 
@@ -77,6 +80,7 @@ SEQUENCE_PRED = Config['recurrent_layer_output_sequence']
 #   use_seq_regen_acc = False
 
 EPOCHS = Config['epochs']
+INIT_EPOCH = Config['init_epoch']
 
 """ Build Model """
 auto_encoder = AutoEncoder(
@@ -86,6 +90,12 @@ auto_encoder = AutoEncoder(
   tokenizer,
   enable_eager_execution=False
 )
+
+ckpt_path = Config['pre_trained_ckpt']
+
+if ckpt_path != None and len(glob.glob(f'{ckpt_path}.*')) == 2:
+  auto_encoder.load_weights(ckpt_path)
+  print(f"Loaded checkpoint: {ckpt_path}")
 
 # if use_seq_regen_acc:
 #   metric = SequenceRegenerationAccuracy()
@@ -125,7 +135,7 @@ metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch/20), st
 
 auto_encoder.set_train_config(num_epochs=EPOCHS, steps_per_epoch=steps_per_epoch, checkpoint_frequency=ckpt_freq)
 
-auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS, callbacks=[cp_callback, metric_callback])
+auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS, initial_epoch=INIT_EPOCH, callbacks=[cp_callback, metric_callback])
 # auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
 
 """ Write metrics to json file """
@@ -151,3 +161,6 @@ with open(metrics_json_path, 'w') as json_file:
 config_json_path = os.path.join(Config['model_folder'], dt_str, "model_config.json")
 with open(config_json_path, 'w') as json_file:
   json.dump(Config, json_file)
+
+end_time = datetime.now()
+print(f"============= Total Training Time: {end_time - train_start_datetime} ============")

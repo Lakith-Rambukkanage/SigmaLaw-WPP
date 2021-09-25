@@ -13,8 +13,8 @@ Config = {
   'vocab_size': 30000,
   'vocab_file': r'E:\Final Year Project\Datasets\bert_training\Tensorflow_TextVectorization_legal_vocab_30000\vocab.txt',
   'embed_dim': 300,
-  'sequence_length': 128,
-  'word_embeddings_type': 'GLOVE',
+  'sequence_length': None,
+  'word_embeddings_type': 'Glove',
   'pretrained_word_embeddings_path': r'E:\Final Year Project\Datasets\word_embeddings\glove.6B',
   'encoder_units': 512,
   'decoder_units': 512,
@@ -23,15 +23,15 @@ Config = {
   'loss_function': 'mean_squared_error',
   'accuracy_metric': 'cosine_similarity',
   'epochs': 2,
-  'model_folder': r'E:\Final Year Project\case_sentence_embedding_models'
+  'init_epoch': 0,
+  'model_folder': r'E:\Final Year Project\case_sentence_embedding_models',
+  'pre_trained_ckpt': None
 }
 
 def validate_config():
   dir_error = "Directory path not found!"
   assert os.path.isdir(Config['case_sentence_csv_folder']), \
     f"{dir_error} `case_sentence_csv_folder` should be the directory of case sentence files"
-  assert os.path.isdir(Config['pretrained_word_embeddings_path']), \
-    f"{dir_error} `pretrained_word_embeddings_path` should be the directory of word embeddings"
   assert os.path.isdir(Config['model_folder']), \
     f"{dir_error} `model_folder` should be the directory to save the checkpoints"
   assert os.path.isfile(Config['vocab_file']), \
@@ -45,5 +45,12 @@ def validate_config():
 
   assert Config['recurrent_layer'] in ['GRU', 'LSTM'], \
     "Invalid option! `recurrent_layer` should be either `GRU` or `LSTM`"
-  assert Config['word_embeddings_type'] in ['GLOVE', 'Word2Vec'], \
-    "Invalid option! `word_embeddings_type` should be either `GLOVE` or `Word2Vec`"
+  assert Config['word_embeddings_type'] in ['Glove', 'Word2Vec', 'FastText'], \
+    "Invalid option! `word_embeddings_type` should be either `Glove` or `Word2Vec` or `FastText`"
+
+  if Config['word_embeddings_type'] == 'Glove':
+    assert os.path.isdir(Config['pretrained_word_embeddings_path']), \
+      f"{dir_error} `pretrained_word_embeddings_path` should be the directory of Glove word embeddings"
+  elif Config['word_embeddings_type'] in ['Word2Vec', 'FastText']:
+    assert os.path.isfile(Config['pretrained_word_embeddings_path']), \
+      f"Invalid file path! `pretrained_word_embeddings_path` should be the path to {Config['word_embeddings_type']} embeddings file"
