@@ -3,12 +3,12 @@ import json
 import tensorflow as tf
 
 class CheckpointSaver(tf.keras.callbacks.Callback):
-  def __init__(self, ckpt_folder, ckpt_freq, steps_per_epoch) -> None:
+  def __init__(self, ckpt_folder, ckpt_freq, steps_per_epoch, starting_epoch=0) -> None:
     super(CheckpointSaver, self).__init__()
     self.ckpt_folder = ckpt_folder
     self.ckpt_freq = ckpt_freq
     self.steps_per_epoch = steps_per_epoch
-    self.epoch_counter = 0
+    self.epoch_counter = starting_epoch
 
   def on_train_batch_end(self, batch, logs=None):
     step_counter = batch + 1
