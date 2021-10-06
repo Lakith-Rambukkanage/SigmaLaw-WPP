@@ -5,7 +5,9 @@ import tensorflow as tf
 from tensorflow.keras.layers import Embedding
 from auto_encoder_config import Config
 
+# Glove Wikipedia + Gigaword: http://nlp.stanford.edu/data/glove.6B.zip
 # GoogleNews Word2Vec: https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz
+# FastText WikiNews: https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
 
 EMBED_DIM = Config['embed_dim']
 EMBED_TYPE = Config['word_embeddings_type']
@@ -26,7 +28,7 @@ def get_glove_embeddings_dict(embeddings_folder=EMBEDDINGS_PATH, embedding_dim=E
 
   return embeddings_dict
 
-def get_embedding_matrix(vocab_list, embeddings_dict, embedding_dim=EMBED_DIM):
+def create_matrix_from_dict(vocab_list, embeddings_dict, embedding_dim=EMBED_DIM):
   # embeddings_dict = get_glove_embeddings_dict()
   num_tokens = len(vocab_list)
   embedding_found = 0
@@ -45,7 +47,7 @@ def get_embedding_matrix(vocab_list, embeddings_dict, embedding_dim=EMBED_DIM):
   print("Converted %d words out of %d" % (embedding_found, num_tokens))
   return embedding_matrix
 
-
+"""
 def get_word2vec_embedding_matrix(vocab_list, embeddings_path=EMBEDDINGS_PATH, embedding_dim=EMBED_DIM):
   from gensim.models import Word2Vec, KeyedVectors
   w2v_model = KeyedVectors.load_word2vec_format(embeddings_path, binary=True)
@@ -66,27 +68,29 @@ def get_word2vec_embedding_matrix(vocab_list, embeddings_path=EMBEDDINGS_PATH, e
 
   print("Converted %d words out of %d" % (embedding_found, num_tokens))
   return embedding_matrix
-
+"""
 
 def get_fasttext_embeddings_dict(embeddings_path=EMBEDDINGS_PATH):
   fin = io.open(embeddings_path, 'r', encoding='utf-8', newline='\n', errors='ignore')
   n, d = map(int, fin.readline().split())
   embeddings_dict = {}
   for line in fin:
-    tokens = line.rstrip().split(' ')
-    embeddings_dict[tokens[0]] = map(float, tokens[1:])
+    word, coefs = line.rstrip().split(maxsplit=1)
+    coefs = np.fromstring(coefs, "f", sep=" ")
+    embeddings_dict[word] = coefs
+  fin.close()
   print(f"Found {len(embeddings_dict)} FastText word vectors in {embeddings_path}.")
   return embeddings_dict
 
 def get_embeddings_matrix(vocab_list, embedding_type=EMBED_TYPE):
   if embedding_type == 'Glove':
     embeddings_dict = get_glove_embeddings_dict()
-    return get_embedding_matrix(vocab_list, embeddings_dict)
+    return create_matrix_from_dict(vocab_list, embeddings_dict)
   elif embedding_type == 'FastText':
     embeddings_dict = get_fasttext_embeddings_dict()
-    return get_embedding_matrix(vocab_list, embeddings_dict)
-  elif embedding_type == 'Word2Vec':
-    return get_word2vec_embedding_matrix(vocab_list)
+    return create_matrix_from_dict(vocab_list, embeddings_dict)
+  # elif embedding_type == 'Word2Vec':
+  #   return get_word2vec_embedding_matrix(vocab_list)
   else:
     raise ValueError(f"Embedding Type should be one of ['Glove', 'Word2Vec', 'FastText'], given {embedding_type}")
 
