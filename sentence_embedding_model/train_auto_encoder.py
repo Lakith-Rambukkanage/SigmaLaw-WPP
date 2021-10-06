@@ -79,8 +79,8 @@ SEQUENCE_PRED = Config['recurrent_layer_output_sequence']
 # if Config['accuracy_metric'] != 'sequence_regeneration_accuracy':
 #   use_seq_regen_acc = False
 
-EPOCHS = Config['epochs']
-INIT_EPOCH = Config['init_epoch']
+NUM_EPOCHS = Config['num_epochs']
+INIT_EPOCH = Config['starting_epoch']
 
 """ Build Model """
 auto_encoder = AutoEncoder(
@@ -103,7 +103,7 @@ if ckpt_path != None and len(glob.glob(f'{ckpt_path}.*')) == 2:
 #   metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
 auto_encoder.compile(
-    optimizer=tf.optimizers.Adam(),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
     # loss=MaskedLoss(sequence=SEQUENCE_PRED),
     loss=tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.SUM),
     # metrics=[metric],
@@ -114,13 +114,14 @@ auto_encoder.compile(
 """ Create checkpoint directory """
 now = datetime.now() # current date and time
 dt_str = now.strftime("D%Y_%m_%d_T%H_%M_%S")
-ckpt_folder = os.path.join(Config['model_folder'], dt_str, "checkpoints")
+current_model_folder = os.path.join(Config['model_folder'], f'AutoEncoder_{Config["word_embeddings_type"]}', dt_str)
+ckpt_folder = os.path.join(current_model_folder, "checkpoints")
 
 if not os.path.exists(ckpt_folder):
   os.makedirs(ckpt_folder)
 
 steps_per_epoch = math.ceil(len(train_sentences)/BATCH_SIZE)
-ckpt_freq = int(steps_per_epoch/4)
+ckpt_freq = int(steps_per_epoch / Config['checkpoints_per_epoch'])
 
 # cp_callback = tf.keras.callbacks.ModelCheckpoint(
 #     filepath=os.path.join(ckpt_folder, 'ckpt-{epoch:02d}'),
@@ -128,17 +129,20 @@ ckpt_freq = int(steps_per_epoch/4)
 #     monitor='batch_loss',
 #     save_freq=ckpt_freq
 # )
-cp_callback = CheckpointSaver(ckpt_folder, ckpt_freq, steps_per_epoch)
+cp_callback = CheckpointSaver(ckpt_folder, ckpt_freq, steps_per_epoch, starting_epoch=INIT_EPOCH)
 
-metrics_json_path = os.path.join(Config['model_folder'], dt_str, "metrics.json")
-metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch/20), steps_per_epoch)
+metrics_json_path = os.path.join(current_model_folder, "metrics.json")
+metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch / Config['logs_per_epoch']), steps_per_epoch)
 
-auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS, initial_epoch=INIT_EPOCH, callbacks=[cp_callback, metric_callback])
+auto_encoder.fit(
+  train_ds, validation_data=val_ds, epochs=INIT_EPOCH + NUM_EPOCHS, initial_epoch=INIT_EPOCH,
+  callbacks=[cp_callback, metric_callback]
+)
 # auto_encoder.fit(train_ds, validation_data=val_ds, epochs=EPOCHS)
 
 
 """ Write model config into json file """
-config_json_path = os.path.join(Config['model_folder'], dt_str, "model_config.json")
+config_json_path = os.path.join(current_model_folder, "model_config.json")
 with open(config_json_path, 'w') as json_file:
   json.dump(Config, json_file)
 

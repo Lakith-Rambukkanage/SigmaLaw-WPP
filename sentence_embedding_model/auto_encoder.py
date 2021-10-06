@@ -1,17 +1,26 @@
-import os
 import tensorflow as tf
 from shape_checker import ShapeChecker
 from encoder import Encoder
 from decoder import Decoder
+from auto_encoder_config import Config
 
 class AutoEncoder(tf.keras.Model):
   def __init__(self, embedding_matrix, enc_units, dec_units, tokenizer, enable_eager_execution=False,
-               train_embeddings=False, enc_return_seq=False, dec_return_seq=False):
+               use_nearest_token_embedding=Config['use_nearest_token_embedding'], train_embeddings=False,
+               enc_return_seq=False, dec_return_seq=False):
     super(AutoEncoder, self).__init__()
     """ Set pre-defined tokenizer """
     self.tokenizer = tokenizer
     self.vocab_size = tokenizer.vocabulary_size()
     self.enable_eager_execution = enable_eager_execution
+    self.use_nearest_token_embedding = use_nearest_token_embedding
+    if self.use_nearest_token_embedding:
+      self.norm_embedding_matrix_transposed = tf.transpose(
+        tf.math.l2_normalize(embedding_matrix, axis=-1),
+        perm=[1, 0]
+      )
+    else:
+      self.norm_embedding_matrix_transposed = None
 
     self.embedding_layer = tf.keras.layers.Embedding(
       embedding_matrix.shape[0],
@@ -108,7 +117,7 @@ class AutoEncoder(tf.keras.Model):
 
       """ Average the loss over all non padding tokens. """
       # average_loss = loss / tf.reduce_sum(tf.cast(mask, tf.float32))
-      average_loss = loss / tf.reduce_sum(tf.cast(mask[:, 0], dtype=loss.dtype))
+      average_loss = loss / tf.cast(tf.shape(tokens)[0], dtype=loss.dtype)
 
       # if self.use_seq_regen_acc:
       #   self.compiled_metrics.update_state(
@@ -125,7 +134,7 @@ class AutoEncoder(tf.keras.Model):
     return batch_metrics
 
   def _loop_step(self, new_tokens, enc_output, dec_state, loss_weights=None, training_mode=False):
-    input_tokens, target_token = new_tokens[:, 0:-1], new_tokens[:, -1]
+    input_tokens, target_tokens = new_tokens[:, 0:-1], new_tokens[:, -1]
 
     """ Run the decoder one step. """
     logits, dec_state = self.decoder(input_tokens, enc_output, state=dec_state, training=training_mode)
@@ -133,9 +142,19 @@ class AutoEncoder(tf.keras.Model):
     self.shape_checker(dec_state, ('batch', 'dec_units'))
 
     """ `self.loss` returns the total for non-padded tokens """
-    # y = target_token
-    y = self.embedding_layer(target_token, training=False)
-    y_pred = logits
+    # y = target_tokens
+    y = self.embedding_layer(target_tokens, training=False)
+
+    if self.use_nearest_token_embedding:
+      # LINK: https://stackoverflow.com/questions/37558899/efficiently-finding-closest-word-in-tensorflow-embedding
+      norm_logits = tf.math.l2_normalize(logits, axis=1)
+      # cosine_similarity = tf.matmul(norm_logits, tf.transpose(self.norm_embedding_matrix, perm=[1, 0]))
+      cosine_similarity = tf.matmul(norm_logits, self.norm_embedding_matrix_transposed)
+      nearest_tokens = tf.argmax(cosine_similarity, axis=1)
+      y_pred = self.embedding_layer(nearest_tokens, training=False)
+    else:
+      y_pred = logits
+
     step_loss = self.loss(y, y_pred, sample_weight=loss_weights)
     self.compiled_metrics.update_state(y, y_pred, sample_weight=loss_weights)
 
@@ -169,7 +188,7 @@ class AutoEncoder(tf.keras.Model):
       #   pred_seq = tf.concat([pred_seq, tf.expand_dims(pred_token, -1)], -1)
 
     # average_loss = loss / tf.reduce_sum(tf.cast(mask, tf.float32))
-    average_loss = loss / tf.reduce_sum(tf.cast(mask[:, 0], dtype=loss.dtype))
+    average_loss = loss / tf.cast(tf.shape(tokens)[0], dtype=loss.dtype)
 
     # if self.use_seq_regen_acc:
     #   self.compiled_metrics.update_state(

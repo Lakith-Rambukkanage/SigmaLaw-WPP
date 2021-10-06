@@ -3,10 +3,11 @@ import os
 Config = {
   'case_sentence_csv_folder': r'E:\Final Year Project\Datasets\criminal_sentences',
   'csv_file_list': [
-    'sentence_dataset_1000_cases.csv', 'sentence_dataset_2000_cases.csv', 'sentence_dataset_3000_cases.csv',
-    'sentence_dataset_4000_cases.csv', 'sentence_dataset_5000_cases.csv', 'sentence_dataset_6000_cases.csv',
-    'sentence_dataset_7000_cases.csv', 'sentence_dataset_8000_cases.csv', 'sentence_dataset_9000_cases.csv',
-    'sentence_dataset_10000_cases.csv',
+    'sentence_dataset_1000_cases.csv',
+    # 'sentence_dataset_2000_cases.csv', 'sentence_dataset_3000_cases.csv',
+    # 'sentence_dataset_4000_cases.csv', 'sentence_dataset_5000_cases.csv', 'sentence_dataset_6000_cases.csv',
+    # 'sentence_dataset_7000_cases.csv', 'sentence_dataset_8000_cases.csv', 'sentence_dataset_9000_cases.csv',
+    # 'sentence_dataset_10000_cases.csv',
   ],
   'batch_size': 4,
   'validation_split': 0.2,
@@ -22,8 +23,11 @@ Config = {
   'recurrent_layer_output_sequence': False,
   'loss_function': 'mean_squared_error',
   'accuracy_metric': 'cosine_similarity',
-  'epochs': 2,
-  'init_epoch': 0,
+  'use_nearest_token_embedding': False,
+  'starting_epoch': 0,
+  'num_epochs': 2,
+  'checkpoints_per_epoch': 1,
+  'logs_per_epoch': 20,
   'model_folder': r'E:\Final Year Project\case_sentence_embedding_models',
   'pre_trained_ckpt': None
 }
