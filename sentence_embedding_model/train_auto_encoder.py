@@ -132,7 +132,7 @@ ckpt_freq = int(steps_per_epoch / Config['checkpoints_per_epoch'])
 cp_callback = CheckpointSaver(ckpt_folder, ckpt_freq, steps_per_epoch, starting_epoch=INIT_EPOCH)
 
 metrics_json_path = os.path.join(current_model_folder, "metrics.json")
-metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch / Config['logs_per_epoch']), steps_per_epoch)
+metric_callback = MetricsRecorder(metrics_json_path, int(steps_per_epoch / Config['logs_per_epoch']), steps_per_epoch, starting_epoch=INIT_EPOCH)
 
 auto_encoder.fit(
   train_ds, validation_data=val_ds, epochs=INIT_EPOCH + NUM_EPOCHS, initial_epoch=INIT_EPOCH,
