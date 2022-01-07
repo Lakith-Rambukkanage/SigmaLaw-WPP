@@ -51,7 +51,7 @@ seed = 1337
 rng = np.random.RandomState(seed)
 rng.shuffle(sentences)
 
-sentences = sentences[:1000]
+# sentences = sentences[:1000]
 
 """ Prepare train and validation Datasets """
 BATCH_SIZE = Config['batch_size']
@@ -103,7 +103,7 @@ if ckpt_path != None and len(glob.glob(f'{ckpt_path}.*')) == 2:
 #   metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
 auto_encoder.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=Config['learning_rate']),
     # loss=MaskedLoss(sequence=SEQUENCE_PRED),
     loss=tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.SUM),
     # metrics=[metric],

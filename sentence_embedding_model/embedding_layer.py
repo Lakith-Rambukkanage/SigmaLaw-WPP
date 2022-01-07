@@ -2,8 +2,10 @@ import os
 import io
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding
+# from tensorflow.keras.layers import Embedding
 from auto_encoder_config import Config
+from gensim.models import KeyedVectors
+from gensim.models.fasttext import FastTextKeyedVectors
 
 # Glove Wikipedia + Gigaword: http://nlp.stanford.edu/data/glove.6B.zip
 # GoogleNews Word2Vec: https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz
@@ -47,9 +49,8 @@ def create_matrix_from_dict(vocab_list, embeddings_dict, embedding_dim=EMBED_DIM
   print("Converted %d words out of %d" % (embedding_found, num_tokens))
   return embedding_matrix
 
-"""
+
 def get_word2vec_embedding_matrix(vocab_list, embeddings_path=EMBEDDINGS_PATH, embedding_dim=EMBED_DIM):
-  from gensim.models import Word2Vec, KeyedVectors
   w2v_model = KeyedVectors.load_word2vec_format(embeddings_path, binary=True)
 
   num_tokens = len(vocab_list)
@@ -68,7 +69,7 @@ def get_word2vec_embedding_matrix(vocab_list, embeddings_path=EMBEDDINGS_PATH, e
 
   print("Converted %d words out of %d" % (embedding_found, num_tokens))
   return embedding_matrix
-"""
+
 
 def get_fasttext_embeddings_dict(embeddings_path=EMBEDDINGS_PATH):
   fin = io.open(embeddings_path, 'r', encoding='utf-8', newline='\n', errors='ignore')
@@ -89,10 +90,38 @@ def get_embeddings_matrix(vocab_list, embedding_type=EMBED_TYPE):
   elif embedding_type == 'FastText':
     embeddings_dict = get_fasttext_embeddings_dict()
     return create_matrix_from_dict(vocab_list, embeddings_dict)
-  # elif embedding_type == 'Word2Vec':
-  #   return get_word2vec_embedding_matrix(vocab_list)
+  elif embedding_type == 'Word2Vec':
+    return get_word2vec_embedding_matrix(vocab_list)
+  elif embedding_type in ['Glove_Legal', 'Word2Vec_Legal', 'FastText_Legal']:
+    return get_legal_embedding_matrix(embedding_type, vocab_list)
   else:
     raise ValueError(f"Embedding Type should be one of ['Glove', 'Word2Vec', 'FastText'], given {embedding_type}")
+
+def get_legal_embedding_matrix(emb_type, vocab_list, embeddings_path=EMBEDDINGS_PATH, embedding_dim=EMBED_DIM):
+  if emb_type in ['Glove_Legal', 'Word2Vec_Legal']:
+    keyed_vec = KeyedVectors.load(embeddings_path, mmap='r')
+  else:
+    keyed_vec = FastTextKeyedVectors.load(embeddings_path)
+
+  num_tokens = len(vocab_list)
+  embedding_found = 0
+
+  # Prepare embedding matrix
+  embedding_matrix = np.zeros((num_tokens, embedding_dim), dtype=np.float32)
+
+  for i in range(num_tokens):
+    try:
+      if vocab_list[i] == '[START]': embedding_matrix[i][0] = 1.0
+      elif vocab_list[i] == '[END]': embedding_matrix[i][-1] = 1.0
+      else:
+        vector = keyed_vec[vocab_list[i]]
+        embedding_matrix[i] = vector
+        embedding_found += 1
+    except KeyError:
+      continue
+
+  print("Converted %d words out of %d" % (embedding_found, num_tokens))
+  return embedding_matrix
 
 """
 def get_embedding_layer(tokenizer, embedding_type=EMBED_TYPE, trainable=False):

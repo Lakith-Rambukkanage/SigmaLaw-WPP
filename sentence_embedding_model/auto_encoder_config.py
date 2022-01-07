@@ -26,6 +26,7 @@ Config = {
   'use_nearest_token_embedding': False,
   'starting_epoch': 0,
   'num_epochs': 2,
+  'learning_rate': 0.001,
   'checkpoints_per_epoch': 1,
   'logs_per_epoch': 20,
   'model_folder': r'E:\Final Year Project\case_sentence_embedding_models',
@@ -49,8 +50,10 @@ def validate_config():
 
   assert Config['recurrent_layer'] in ['GRU', 'LSTM'], \
     "Invalid option! `recurrent_layer` should be either `GRU` or `LSTM`"
-  assert Config['word_embeddings_type'] in ['Glove', 'Word2Vec', 'FastText'], \
-    "Invalid option! `word_embeddings_type` should be either `Glove` or `Word2Vec` or `FastText`"
+
+  word_emb_types = ['Glove', 'Word2Vec', 'FastText', 'Glove_Legal', 'Word2Vec_Legal', 'FastText_Legal']
+  assert Config['word_embeddings_type'] in word_emb_types, \
+    f"Invalid option! `word_embeddings_type` should be either ${word_emb_types}"
 
   if Config['word_embeddings_type'] == 'Glove':
     assert os.path.isdir(Config['pretrained_word_embeddings_path']), \
