@@ -71,6 +71,7 @@ tokenizer = get_tokenizer()
 embedding_matrix = get_embeddings_matrix(tokenizer.get_vocabulary())
 
 """ Model Config """
+RNN_TYPE = Config['recurrent_layer']
 ENC_UNITS = Config['encoder_units']
 DEC_UNITS = Config['decoder_units']
 SEQUENCE_PRED = Config['recurrent_layer_output_sequence']
@@ -88,6 +89,7 @@ auto_encoder = AutoEncoder(
   ENC_UNITS,
   DEC_UNITS,
   tokenizer,
+  rnn_type=RNN_TYPE,
   enable_eager_execution=False
 )
 

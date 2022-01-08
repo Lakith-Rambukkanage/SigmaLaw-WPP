@@ -5,7 +5,7 @@ from decoder import Decoder
 from auto_encoder_config import Config
 
 class AutoEncoder(tf.keras.Model):
-  def __init__(self, embedding_matrix, enc_units, dec_units, tokenizer, enable_eager_execution=False,
+  def __init__(self, embedding_matrix, enc_units, dec_units, tokenizer, rnn_type='GRU', enable_eager_execution=False,
                use_nearest_token_embedding=Config['use_nearest_token_embedding'], train_embeddings=False,
                enc_return_seq=False, dec_return_seq=False):
     super(AutoEncoder, self).__init__()
@@ -30,8 +30,8 @@ class AutoEncoder(tf.keras.Model):
     )
 
     """ Initialize Encoder & Decoder """
-    self.encoder = Encoder(self.embedding_layer, enc_units, enc_return_seq)
-    self.decoder = Decoder(self.embedding_layer, dec_units, self.vocab_size, dec_return_seq)
+    self.encoder = Encoder(self.embedding_layer, enc_units, recurrent_layer_type=rnn_type, return_seq=enc_return_seq)
+    self.decoder = Decoder(self.embedding_layer, dec_units, self.vocab_size, recurrent_layer_type=rnn_type, return_seq=dec_return_seq)
 
     self.shape_checker = ShapeChecker()
 
@@ -99,7 +99,7 @@ class AutoEncoder(tf.keras.Model):
       """ Encode the input """
       enc_output, enc_state = self.encoder(tokens)
       self.shape_checker(enc_output, ('batch', 'enc_units'))
-      self.shape_checker(enc_state, ('batch', 'enc_units'))
+      # self.shape_checker(enc_state, ('batch', 'enc_units'))
 
       dec_state = enc_state
       loss = tf.constant(0.0)
@@ -139,7 +139,7 @@ class AutoEncoder(tf.keras.Model):
     """ Run the decoder one step. """
     logits, dec_state = self.decoder(input_tokens, enc_output, state=dec_state, training=training_mode)
     self.shape_checker(logits, ('batch', 'logits'))
-    self.shape_checker(dec_state, ('batch', 'dec_units'))
+    # self.shape_checker(dec_state, ('batch', 'dec_units'))
 
     """ `self.loss` returns the total for non-padded tokens """
     # y = target_tokens
