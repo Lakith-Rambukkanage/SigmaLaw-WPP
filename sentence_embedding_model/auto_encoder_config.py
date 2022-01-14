@@ -20,6 +20,7 @@ Config = {
   'encoder_units': 512,
   'decoder_units': 512,
   'recurrent_layer': 'GRU',
+  'bidirectional': False,
   'recurrent_layer_output_sequence': False,
   'loss_function': 'mean_squared_error',
   'accuracy_metric': 'cosine_similarity',

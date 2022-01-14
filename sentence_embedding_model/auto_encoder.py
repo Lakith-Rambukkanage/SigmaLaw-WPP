@@ -5,9 +5,9 @@ from decoder import Decoder
 from auto_encoder_config import Config
 
 class AutoEncoder(tf.keras.Model):
-  def __init__(self, embedding_matrix, enc_units, dec_units, tokenizer, rnn_type='GRU', enable_eager_execution=False,
-               use_nearest_token_embedding=Config['use_nearest_token_embedding'], train_embeddings=False,
-               enc_return_seq=False, dec_return_seq=False):
+  def __init__(self, embedding_matrix, enc_units, dec_units, tokenizer, rnn_type='GRU',
+               enable_eager_execution=False, use_nearest_token_embedding=Config['use_nearest_token_embedding'],
+               train_embeddings=False, enc_return_seq=False, dec_return_seq=False):
     super(AutoEncoder, self).__init__()
     """ Set pre-defined tokenizer """
     self.tokenizer = tokenizer
