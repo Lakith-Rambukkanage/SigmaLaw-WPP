@@ -112,3 +112,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# custom scripts
+test_scripts/
