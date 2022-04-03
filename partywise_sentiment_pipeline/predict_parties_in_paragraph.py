@@ -1,5 +1,7 @@
 import numpy as np
 
+from coref_update_utils import build_complete_entity
+
 def build_complete_ner(word, ner, token_list):
   if (len(token_list)>0):
     if (token_list[0].get('ner') == ner):
@@ -50,9 +52,10 @@ def createVectorListFromToken(w2v_model, token_list, ner_list, masks_dict_list):
     while j < len(current_token_list):
       step = 1
 
-      if (current_ner_list[j] == "None"):
+      # if (current_ner_list[j] == "None"):
+      if 'coref' not in current_token_list[j].keys():
         try:
-          vec = [np.append(w2v_model[current_token_list[j]], 0)]
+          vec = [np.append(w2v_model[current_token_list[j]['originalText']], 0)]
           # print("current_ner_list[j] == 'None': ", vec)
         except KeyError:
           vec = [np.zeros(301)]
@@ -62,13 +65,18 @@ def createVectorListFromToken(w2v_model, token_list, ner_list, masks_dict_list):
         try:
           # vec = [np.append(np.zeros(300), mask_dict[current_token_list[j]])]
           # vec = np.append(np.zeros(300), get_mask_value(mask_dict, current_token_list[j]))
-          print("Running `get_entity_vector()`.... for word: ", current_token_list[j])
-          vec, step = get_entity_vector(mask_dict, current_token_list, j)
+          # print("Running `get_entity_vector()`.... for word: ", current_token_list[j])
+          # vec, step = get_entity_vector(mask_dict, current_token_list, j)
+          # print(f"word: {current_token_list[j]['originalText']} | mask value: {mask_dict[current_token_list[j]['coref']]}")
+          if current_token_list[j]['ner'] in ["PERSON", "ORGANIZATION", "LOCATION"]:
+            vec = [np.append(np.zeros(300), mask_dict[current_token_list[j]['coref']])]
+          else:
+            vec = [np.append(w2v_model[current_token_list[j]['originalText']], mask_dict[current_token_list[j]['coref']])]
 
           # print("current_ner_list[j] != 'None': ", vec)
         except KeyError:
           vec = [np.zeros(301)]
-          print(f"current_ner_list[{j}] != 'None': KeyError Occured!")
+          # print(f"{current_token_list[j]['originalText']} : KeyError Occured!")
 
       sentence_vector.extend(vec)
       j += step
@@ -77,43 +85,113 @@ def createVectorListFromToken(w2v_model, token_list, ner_list, masks_dict_list):
 
   return vector_list
 
-def makeTokenNERListsFromParagraph(text, annotation):
+def makeTokenNERListsFromParagraph(tokens_sentences, corefs):
+  # result = json.loads(nlp.annotate(text, properties=props))
+# def makeTokenNERListsFromParagraph(text, result):
+  # sentences = result['sentences']
+  # corefs = result['corefs']
+
+  sentence_tokens_test = []
   token_list = []
-  token_prefixes = []
-  entity_prefixes = {}
-  headwords_2d_list = []
+  sentence_ners_test = []
+  ner_test = {}
 
-  for sentence in annotation['sentences']:
-    sentence_tokens = sentence.get('tokens')
-    sentence_headwords = []
+  for each in tokens_sentences:
+    q = each.get('tokens')
+    latest_entity = ""
 
-    for j in range(len(sentence_tokens)):
-      token_list.append(sentence_tokens[j].get('word'))
+    for j in range(len(q)):
+      # sentence_tokens_test.append(q[j].get('word'))
+      # token_list.append(q[j])
 
-      if (sentence_tokens[j].get("ner") == "PERSON" or sentence_tokens[j].get("ner") == "ORGANIZATION" or sentence_tokens[j].get("ner") == "LOCATION"):
-        sentence_headwords.append(sentence_tokens[j].get('word'))
-        full_name = build_complete_ner(sentence_tokens[j].get("word"), sentence_tokens[j].get("ner"), sentence_tokens[j+1 : len(sentence_tokens)])
-
-        if (sentence_tokens[j].get("ner") == "PERSON"):
+      if (q[j].get("ner") == "PERSON" or q[j].get("ner") == "ORGANIZATION" or q[j].get("ner") == "LOCATION"):
+        # word = build_complete_ner(q[j].get("word"), q[j].get("ner"), q[j+1 : len(q)])
+        word = build_complete_entity(q[j].get("ner"), q[j:])
+        if (q[j].get("ner") == "PERSON"):
           prefix = "P"
-        elif (sentence_tokens[j].get("ner") == "ORGANIZATION") :
+        elif (q[j].get("ner") == "ORGANIZATION") :
           prefix = "O"
         else:
           prefix = "L"
 
-        if (j==0 or (j!=0 and sentence_tokens[j-1].get("ner") != sentence_tokens[j].get("ner"))):
-          entity_prefixes[full_name] = prefix
-          words = full_name.split(" ")
+        if (j==0):
+          ner_test[word] = prefix
+          words = word.split(" ")
+          latest_entity = word
           for l in words:
-            token_prefixes.append(prefix)
+            sentence_ners_test.append(prefix)
+
+        if (j!=0 and q[j-1].get("ner") != q[j].get("ner")):
+          ner_test[word] = prefix
+          latest_entity = word
+          words = word.split(" ")
+          for l in words:
+            sentence_ners_test.append(prefix)
+
+        if 'coref' not in q[j].keys():
+          q[j]['coref'] = latest_entity
+          # print("single reference entity:", q[j])
+        token_list.append(q[j])
 
       else:
-        token_prefixes.append("None")
-        sentence_headwords.append(0)
+        token_list.append(q[j])
+        sentence_ners_test.append("None")
 
-    headwords_2d_list.append(sentence_headwords)
+  # print("ner_test: ", ner_test)
+  # print("sentence_ners_test: ", sentence_ners_test)
 
-  return token_list, token_prefixes, entity_prefixes, headwords_2d_list
+  headwords_list = []
+  for sentence in tokens_sentences:
+    headwords = []
+    for each in sentence['tokens']:
+      if(each.get("ner") == "PERSON" or each.get("ner") == "ORGANIZATION" or each.get("ner") == "LOCATION"):
+        headwords.append(each.get('word'))
+      else:
+        headwords.append(0)
+
+    headwords_list.append(headwords)
+
+  # print("headwords_list: ", headwords_list)
+
+  final_ner_dict = {}
+  cluster_list = []
+
+  for i in corefs.values():
+    party_value = False
+    for each in ner_test.keys():
+      if each in i[0]['text']:
+        party_value = True
+        final_ner_dict[i[0]['text']] = ner_test[each]
+    if party_value == True:
+      cluster = []
+      for j in i:
+        # print(j)
+        for index in range(j['startIndex']-1,j['endIndex']-1):
+          # print(j['position'][0], index)
+          headwords_list[j['position'][0]-1][index] = i[0]['text']
+        cluster.append(j['text'])
+
+      cluster_list.append(cluster)
+
+  # print("final_ner_dict: ", final_ner_dict)
+  # print("cluster_list: ", cluster_list)
+  # print("headwords_list: ", headwords_list)
+
+  final_headwords = []
+  for i in headwords_list:
+    for j in i:
+      final_headwords.append(j)
+
+  for ner in ner_test.keys():
+    val = True
+    for cluster_ner in final_ner_dict.keys():
+      if ner in cluster_ner:
+        val = False
+    if (val):
+      final_ner_dict[ner] = ner_test[ner]
+
+  # return sentence_ners_test, final_headwords, final_ner_dict, sentence_tokens_test
+  return sentence_ners_test, final_headwords, final_ner_dict, token_list
 
 def getCorefTokens(entity_prefixes, headwords_2d_list, annotation):
   final_ner_dict = {}
@@ -131,7 +209,7 @@ def getCorefTokens(entity_prefixes, headwords_2d_list, annotation):
         # print(ref)
         for index in range(ref['startIndex']-1, ref['endIndex']-1):
           # print(ref['position'][0], index)
-          headwords_list[ref['position'][0] - 1][index] = coref_cluster[0]['text']
+          headwords_2d_list[ref['position'][0] - 1][index] = coref_cluster[0]['text']
         cluster.append(ref['text'])
 
       cluster_list.append(cluster)
@@ -174,7 +252,7 @@ def probabilityCal(legal_entities, headwords_list, plaintif_prob, defendant_prob
       continue
     else:
       continue
-  
+
   if (len(legal_entities) > 0):
     le_list=list(legal_entities)
     for j in range(len(legal_entities)):
@@ -201,12 +279,12 @@ def probabilityCal(legal_entities, headwords_list, plaintif_prob, defendant_prob
 def pad_inputs(sentence_vectors_list, headwords_list, max_length=443):
   if len(headwords_list) > max_length:
     raise ValueError("tokens count exceeds the input sequence length of the model")
-  
+
   padded_sentence_vectors_list = []
   for sentence_vectors in sentence_vectors_list:
     sentence_vectors.extend([np.zeros(301)] * (max_length - len(sentence_vectors)))
     padded_sentence_vectors_list.append(sentence_vectors)
-  
+
   vectors_np = np.array(padded_sentence_vectors_list)
   print("vectors_np shape: ", vectors_np.shape)
 

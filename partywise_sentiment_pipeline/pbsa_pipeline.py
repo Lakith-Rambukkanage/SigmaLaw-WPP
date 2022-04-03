@@ -1,4 +1,5 @@
 import json
+import gensim
 from keras.models import load_model
 from stanfordcorenlp import StanfordCoreNLP
 from predict_parties_in_paragraph import predict_parties
@@ -140,7 +141,7 @@ def execute_pipeline(raw_text):
   ascii_text = remove_non_ascii(raw_text)
 
   nlp, props = get_stanford_annotater(STANFORD_CORENLP)
-  annotation = json.loads(nlp.annotate(ascii_txt, properties=props))
+  annotation = json.loads(nlp.annotate(ascii_text, properties=props))
 
   w2v_model = get_word2vec_model(GOOGLE_NEWS_VECTORS_PATH)
 
