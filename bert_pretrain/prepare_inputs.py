@@ -26,7 +26,7 @@ class Dataset(torch.utils.data.Dataset):
     return {key: tensor[i] for key, tensor in self.encodings.items()}
 
 def read_sentences():
-  csv_file_list = Config['csv_file_list']
+  csv_file_list = Config['csv_files']
   sentences = []
   for fileindex in trange(len(csv_file_list)):
     df = pd.read_csv(os.path.join(Config['case_sentence_csv_folder'], csv_file_list[fileindex]))
@@ -35,6 +35,9 @@ def read_sentences():
 
 def get_tokenizer():
   return RobertaTokenizer.from_pretrained(Config['tokenizer_path'], max_len=SEQ_LEN)
+
+def get_mask_token_id():
+  return get_tokenizer().mask_token_id
 
 def create_input_ids_masks_labels(sentences, tokenizer):
   input_ids = []
@@ -66,11 +69,15 @@ def get_data_loader():
   shuffler = Random(15)
   shuffler.shuffle(sentences)
   train_lim = int(len(sentences) * Config['train_set_ratio'])
-  train_sentences = sentences[:train_lim]
-  val_sentences = sentences[train_lim:]
   tokenizer = get_tokenizer()
-  train_encodings = create_input_ids_masks_labels(train_sentences, tokenizer)
-  val_encodings = create_input_ids_masks_labels(val_sentences, tokenizer)
-  train_dataloader = torch.utils.data.DataLoader(Dataset(train_encodings), batch_size=BATCH_SIZE, shuffle=False)
-  val_dataloader = torch.utils.data.DataLoader(Dataset(val_encodings), batch_size=BATCH_SIZE, shuffle=False)
+  train_dataloader = torch.utils.data.DataLoader(
+    Dataset(create_input_ids_masks_labels(sentences[:train_lim], tokenizer)),
+    batch_size=BATCH_SIZE,
+    shuffle=False
+  )
+  val_dataloader = torch.utils.data.DataLoader(
+    Dataset(create_input_ids_masks_labels(sentences[train_lim:], tokenizer)),
+    batch_size=BATCH_SIZE,
+    shuffle=False
+  )
   return train_dataloader, val_dataloader

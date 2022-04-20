@@ -10,7 +10,7 @@ Config = {
   'vocab_size': 30000,
   'seq_len': 128,
   'tokenizer_path': r'',
-  'batch_size': 32,
+  'batch_size': 64,
   'embedding_dim': 768,
   'attention_heads': 8,
   'encoder_layers': 4,
@@ -19,8 +19,7 @@ Config = {
   'learning_rate': 1e-4,
   'optimizer': 'AdamW',
   'model_path': r'',
-  'checkpoints_path': r'',
-  'config_path': r'',
   'start_epoch': 0,
-  'num_epochs': 5
+  'num_epochs': 1,
+  'last_ckpt_path': r''
 }
